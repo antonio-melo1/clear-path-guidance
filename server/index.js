@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 
 dotenv.config();
 
@@ -19,22 +19,15 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl ?? "", supabaseServiceKey ?? "");
 
-// Setup Nodemailer transporter - MOVED OUTSIDE routes
-const mailTransporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+// Setup SendGrid with API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-// Email sending function - MOVED BEFORE routes
+// Email sending function
 const sendQuizEmail = async (toEmail, toName) => {
-  const mailOptions = {
-    from: `"ProstatePath" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+  const msg = {
     to: toEmail,
+    from: `"ProstatePath" <${process.env.SMTP_FROM || 'antonio.melo.contact@gmail.com'}>`,
+    replyTo: 'antonio.melo.contact@gmail.com',
     subject: "Your ProstatePath Assessment: What's Next",
     html: `
 <!DOCTYPE html>
@@ -166,7 +159,6 @@ const sendQuizEmail = async (toEmail, toName) => {
 </body>
 </html>
     `,
-    // Fallback plain text version
     text: `Hey${toName ? ", " + toName : ""},
 
 Thanks for taking the time to complete the assessment — your answers are incredibly valuable.
@@ -206,10 +198,13 @@ P.S. - I'm using feedback from men like you to shape every feature. Your input m
   };
   
   try {
-    await mailTransporter.sendMail(mailOptions);
+    await sgMail.send(msg);
     console.log(`Quiz email sent to ${toEmail}`);
   } catch (err) {
     console.error("Failed to send quiz email:", err);
+    if (err.response) {
+      console.error("SendGrid error details:", err.response.body);
+    }
   }
 };
 
