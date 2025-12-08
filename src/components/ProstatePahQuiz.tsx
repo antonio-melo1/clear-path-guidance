@@ -14,6 +14,7 @@ interface QuizProps {
 
 type Step = 
   | "intro"
+  | "prelaunch"
   | "q1" | "q2" | "q3" | "q4"
   | "intensity1" | "intensity2"
   | "open1" | "open2"
@@ -41,7 +42,7 @@ interface QuizData {
 }
 
 const ProstatePahQuiz = ({ isOpen, onClose }: QuizProps) => {
-  const [step, setStep] = useState<Step>("intro");
+  const [step, setStep] = useState<Step>("prelaunch");
   const [data, setData] = useState<QuizData>({
     describes: "",
     concern: "",
@@ -59,7 +60,7 @@ const ProstatePahQuiz = ({ isOpen, onClose }: QuizProps) => {
 
   // timing helpers
   const [lastStepStart, setLastStepStart] = useState<number>(Date.now());
-  const [lastStepId, setLastStepId] = useState<Step>("intro");
+  const [lastStepId, setLastStepId] = useState<Step>("prelaunch");
 
   const totalSteps = 9;
   const stepOrder: Step[] = ["q1", "q2", "q3", "q4", "intensity1", "intensity2", "open1", "open2", "email-form"];
@@ -99,7 +100,7 @@ const ProstatePahQuiz = ({ isOpen, onClose }: QuizProps) => {
   }, [step]);
 
   const goNext = () => {
-    const steps: Step[] = ["intro", "q1", "q2", "q3", "q4", "intensity1", "intensity2", "open1", "open2", "email-form"];
+    const steps: Step[] = ["prelaunch", "intro", "q1", "q2", "q3", "q4", "intensity1", "intensity2", "open1", "open2", "email-form"];
     const idx = steps.indexOf(step);
     if (idx < steps.length - 1) {
       setStep(steps[idx + 1]);
@@ -107,7 +108,7 @@ const ProstatePahQuiz = ({ isOpen, onClose }: QuizProps) => {
   };
 
   const goBack = () => {
-    const steps: Step[] = ["intro", "q1", "q2", "q3", "q4", "intensity1", "intensity2", "open1", "open2", "email-form"];
+    const steps: Step[] = ["prelaunch", "intro", "q1", "q2", "q3", "q4", "intensity1", "intensity2", "open1", "open2", "email-form"];
     const idx = steps.indexOf(step);
     if (idx > 0) {
       setStep(steps[idx - 1]);
@@ -115,6 +116,9 @@ const ProstatePahQuiz = ({ isOpen, onClose }: QuizProps) => {
   };
 
   const handleSubmit = async () => {
+    // Immediately advance to thank-you step for instant feedback
+    setStep("thank-you");
+
     try {
       // Finalize timing info
       const finishedAt = new Date().toISOString();
@@ -152,8 +156,6 @@ const ProstatePahQuiz = ({ isOpen, onClose }: QuizProps) => {
       console.error("Error submitting quiz:", err);
       // proceed to thank-you to avoid blocking user's flow
     }
-
-    setStep("thank-you");
   };
 
   const resetAndClose = () => {
@@ -186,7 +188,7 @@ const ProstatePahQuiz = ({ isOpen, onClose }: QuizProps) => {
     }
 
     // reset UI state
-    setStep("intro");
+    setStep("prelaunch");
     setData({
       describes: "",
       concern: "",
@@ -237,6 +239,28 @@ const ProstatePahQuiz = ({ isOpen, onClose }: QuizProps) => {
       <Button variant="cta" size="lg" onClick={goNext} className="w-full">
         Let's Get Started <ArrowRight className="ml-2 w-4 h-4" />
       </Button>
+    </div>
+  );
+
+  const renderPrelaunch = () => (
+    <div className="text-center space-y-6">
+      <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto">
+        <Check className="w-8 h-8 text-accent" />
+      </div>
+      <h2 className="text-2xl font-bold text-foreground">Early access — help us build something better</h2>
+      <p className="text-muted-foreground">
+        Our prostate guidance product is currently under development and will be released soon. In the meantime,
+        taking this short quiz helps us improve the information and guidance we provide.
+      </p>
+      <p className="text-sm text-muted-foreground">It only takes a couple of minutes and your responses will directly shape the product.</p>
+      <div className="space-y-3">
+        <Button variant="cta" size="lg" className="w-full" onClick={goNext}>
+          Take the quiz
+        </Button>
+        <Button variant="ghost" className="w-full text-muted-foreground" onClick={resetAndClose}>
+          Maybe later
+        </Button>
+      </div>
     </div>
   );
 
@@ -561,6 +585,9 @@ const ProstatePahQuiz = ({ isOpen, onClose }: QuizProps) => {
         We're preparing your personalized prostate health guidance. Check your inbox at <strong>{data.email}</strong> for next steps.
       </p>
       <p className="text-sm text-muted-foreground">
+        If you don't see the email, please wait patiently for a few seconds, then check your spam or promotions folder — and if you find it there, please mark it as "Not spam" so future messages arrive in your inbox.
+      </p>
+      <p className="text-sm text-muted-foreground">
         In the meantime, feel free to explore our resources and learn more about taking control of your prostate health journey.
       </p>
       <Button variant="cta" onClick={resetAndClose} className="w-full">
@@ -589,6 +616,7 @@ const ProstatePahQuiz = ({ isOpen, onClose }: QuizProps) => {
 
   const renderStep = () => {
     switch (step) {
+      case "prelaunch": return renderPrelaunch();
       case "intro": return renderIntro();
       case "q1": return renderQ1();
       case "q2": return renderQ2();
